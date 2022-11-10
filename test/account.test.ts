@@ -11,7 +11,23 @@ import { expect } from 'chai';
 import { ethers, Signer } from 'ethers';
 import { readFileSync } from 'fs';
 
-describe('Account circuit tests using typescript wrapper', function () {
+type AccountInputs = {
+  data_tree_root: Buffer;
+  account_public_key: [Buffer, Buffer]; // All keys are size 2 arrays for x and y points on curve
+  new_account_public_key: [Buffer, Buffer];
+  spending_public_key_1: [Buffer, Buffer];
+  spending_public_key_2: [Buffer, Buffer];
+  alias_hash: Buffer;
+  create: number;
+  migrate: number;
+  account_note_index: Buffer;
+  account_note_path: [Buffer, Buffer]; // 32 depth
+  signing_pub_key: [Buffer, Buffer];
+  signature: Buffer[]; // u8 array of size 64
+  return: Buffer[]; // 15 return inputs here, almost all zero aside from nullifiers
+};
+
+describe('Account circuit tests using typescript wrapper', async function () {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let acir: any;
     let prover: StandardExampleProver;
@@ -26,11 +42,11 @@ describe('Account circuit tests using typescript wrapper', function () {
       [prover, verifier] = await setup_generic_prover_and_verifier(acir);
     });
   
-    // async function createAndVerifyProof(abi: JoinSplitInputs): Promise<boolean> {
-    //   const proof = await create_proof(prover, acir, abi);
+    async function createAndVerifyProof(abi: AccountInputs): Promise<boolean> {
+      const proof = await create_proof(prover, acir, abi);
   
-    //   return verify_proof(verifier, proof);
-    // }
+      return verify_proof(verifier, proof);
+    }
   
     context('when inputs are equal', () => {
       it('rejects the proof', async () => {

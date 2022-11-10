@@ -1,16 +1,20 @@
 use dep::std;
+use dep::utils;
 
 fn main(
+  data_tree_root: Field,
   account_public_key: [Field; 2],
   new_account_public_key: [Field; 2],
   spending_public_key_1: [Field; 2],
   spending_public_key_2: [Field; 2],
   alias_hash: Field,
-  create: u1,
+  create: comptime u1,
   migrate: u1,
+  account_note_index: Field,
+  account_note_path: [Field; 32],
   signing_pub_key: [Field; 2],
   signature: [u8; 64]
-) -> pub [Field; 5] {
+) -> pub [Field; 15] {
     let proof_id = 4;
 
     // 3 modes
@@ -52,13 +56,10 @@ fn main(
 
     // If creating an account from scratch, sign against the account private key, else sign with the spending key of the
     // input note
-    let mut signer: [Field; 2] = [0 as Field; 2];
+    let mut signer: [Field; 2] = [signing_pub_key[0], signing_pub_key[1]];
     if create == 1 {
         signer[0] = account_public_key[0];
         signer[1] = account_public_key[1];
-    } else {
-        signer[0] = signing_pub_key[0];
-        signer[1] = signing_pub_key[1];
     }
 
     constrain new_account_public_key != spending_public_key_1;
@@ -78,11 +79,39 @@ fn main(
         ]
     )[0];
     constrain message != 0;
-    //let m = 5;
-    let q = [0 as u8; 32];
-    // signer causing errors
-    let sig_res = std::schnorr::verify_signature(signer[0], signer[1], signature, q);
+    //let message_byte_array = [0 as u8; 32];
+    let message_byte_array = utils::field_first_four_bytes(message);
+    let sig_res = std::schnorr::verify_signature(signer[0], signer[1], signature, message_byte_array);
     constrain sig_res == 1;
+
+    // Check signing account note exists if create != 0.    
+    let account_note_data_commitment = std::hash::pedersen([
+        alias_hash,
+        account_public_key[0],
+        account_public_key[1],
+        signer[0],
+        signer[1]
+    ])[0];
+    let computed_data_tree_root = std::merkle::compute_root_from_leaf(account_note_data_commitment, account_note_index, account_note_path);
+    if create == 0 {
+        constrain computed_data_tree_root == data_tree_root;
+    }
+
+    // Check account public key does not change unless migrating.
+    if account_public_key != new_account_public_key {
+        constrain migrate == 1;
+    }
+
+    let public_value = 0;
+    let public_owner = 0;
+    let asset_id = 0;
+    let tx_fee = 0;
+    let tx_fee_asset_id = 0;
+    let bridge_call_data = 0;
+    let defi_deposit_value = 0;
+    let defi_root = 0;
+    let backward_link = 0;
+    let allow_chain = 0;
 
     [
         proof_id, 
@@ -90,24 +119,15 @@ fn main(
         output_note_2_commitment,
         nullifier_1,
         nullifier_2,
+        public_value,
+        public_owner,
+        asset_id,
+        tx_fee,
+        tx_fee_asset_id,
+        bridge_call_data,
+        defi_deposit_value,
+        defi_root,
+        backward_link,
+        allow_chain
     ]
-}
-
-fn field_to_u8_array(input: Field) -> [u8; 32] {
-    let input_bits = std::to_bits(input, 128 as u32);
-
-    let mut byte_array: [u8; 32] = [0 as u8; 32];
-    for i in 0..16 {
-        let index = i * 8;
-        let mut byte: u8 = 0;
-        //for j in 0..8 {
-            //if index + j < 128 {
-              //  byte = (byte * 2) | (input_bits[index+j] as u8);
-            //}
-        //};
-        byte_array[i] = input_bits[index] as u8;
-        byte_array[i] = byte;
-
-    };
-    byte_array
 }

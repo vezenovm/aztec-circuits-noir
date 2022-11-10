@@ -3,4 +3,4 @@ authors = [""]
 compiler_version = "0.1"
 
 [dependencies]
-utils = { path = "../utils_lib" }
+utils = { path = "../../../circuits/utils_lib" }
