@@ -51,10 +51,11 @@ describe('Field to u8 array circuit tests using typescript wrapper', function ()
             field: toFixedHex(2040124, true),
             return: ["0x3c", "0x21", "0x1f", "0x00"]
         };
+        // TODO: get these methods into barretenberg 
+        
         // let serialised_circuit = serialise_acir_to_barrtenberg_circuit(acir);
         // let circuit_size = getCircuitSizeNoRounding(barretenberg, serialised_circuit);
         // console.log(circuit_size);
-
         const verified = await createAndVerifyProof(abi);
         expect(verified).to.be.true;
       });
