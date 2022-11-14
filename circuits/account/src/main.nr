@@ -92,9 +92,11 @@ fn main(
         signer[0],
         signer[1]
     ])[0];
-    let computed_data_tree_root = std::merkle::compute_root_from_leaf(account_note_data_commitment, account_note_index, account_note_path);
+    //let computed_data_tree_root = std::merkle::compute_root_from_leaf(account_note_data_commitment, account_note_index, account_note_path);
+    let is_member = std::merkle::check_membership(data_tree_root, account_note_data_commitment, account_note_index, account_note_path);
     if create == 0 {
-        constrain computed_data_tree_root == data_tree_root;
+        constrain is_member == 1;    
+        //constrain computed_data_tree_root == data_tree_root;
     }
 
     // Check account public key does not change unless migrating.
