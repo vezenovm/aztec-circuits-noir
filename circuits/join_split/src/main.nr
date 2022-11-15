@@ -237,7 +237,7 @@ fn main(
     ]
   )[0];
 
-  let message_byte_array = utils::half_of_field_to_bytes(message);
+  let message_byte_array = utils::field_to_bytes(message);
   let sig_res = std::schnorr::verify_signature(signer[0], signer[1], signature, message_byte_array);
   constrain sig_res == 1;
 
@@ -260,7 +260,6 @@ fn process_input_note(
   index: Field,
   note: ValueNote,
   is_propagated: bool,
-  // TODO: currently broken, reference above in the circuit
   is_note_in_use: bool,
 ) -> Field {
   if note.value != 0 {
