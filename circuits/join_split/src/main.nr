@@ -32,7 +32,7 @@ fn main(
   account_required: u1,
   backward_link: Field,
   allow_chain: Field
-) -> pub [Field; 8]{
+) -> pub [Field; 8] {
   let is_deposit = proof_id == DEPOSIT;
   let is_withdraw = proof_id == WITHDRAW;
   let is_send = proof_id == SEND;
@@ -72,9 +72,18 @@ fn main(
   let one_input_note = num_input_notes == 1;
   let two_input_notes = num_input_notes == 2;
 
-  constrain (no_input_notes | one_input_note | two_input_notes) == true;
+  if !no_input_notes {
+    constrain one_input_note | two_input_notes;
+  }
+  // Panics with 'Can only multiply linear terms when this is used'
+  //constrain no_input_notes | one_input_note | two_input_notes;
 
-  let input_note_1_in_use = one_input_note | two_input_notes;
+  // Cannot use this later in `process_input_note` without the linear term panic
+  //let input_note_1_in_use = one_input_note | two_input_notes;
+  let mut input_note_1_in_use = one_input_note;
+  if !input_note_1_in_use {
+    input_note_1_in_use = two_input_notes;
+  }
   let input_note_2_in_use = two_input_notes;
 
   let equal_input_asset_ids = input_note_1.asset_id == input_note_2.asset_id;
@@ -82,13 +91,20 @@ fn main(
 
   let input_note_1_value = input_note_1.value;
   let mut input_note_2_value = input_note_2.value;
-  let output_note_1_value = output_note_2.value * (not_defi_deposit as Field);
+  let mut output_note_1_value = 0;
+  if not_defi_deposit {
+    output_note_1_value = output_note_2.value;
+  }
   let output_note_2_value = output_note_2.value;
 
   constrain is_public_tx == (public_value == 0);
   constrain is_public_tx == (public_owner == 0);
 
-  constrain is_deposit | is_withdraw | is_send | is_defi_deposit;
+  // Panics with 'Can only multiply linear terms when this is used'
+  //constrain is_deposit | is_withdraw | is_send | is_defi_deposit;
+  if !is_deposit | !is_withdraw {
+    constrain is_send | is_defi_deposit;
+  }
 
   constrain input_note_1.commitment != input_note_2.commitment;
 
@@ -98,24 +114,51 @@ fn main(
   (asset_id == output_note_1.asset_id) & 
   (asset_id == output_note_2.asset_id);
 
-  constrain !(input_note_2_in_use & (is_deposit | is_send | is_withdraw)) | equal_input_asset_ids;
+  let mut send_or_withdraw = true;
+  if !is_deposit {
+    send_or_withdraw = is_send | is_withdraw;
+  }
+  if !equal_input_asset_ids {
+    constrain !(input_note_2_in_use & send_or_withdraw);
+  }
+  // Panics with 'Can only multiply linear terms when this is used'
+  //constrain !(input_note_2_in_use & send_or_withdraw) | equal_input_asset_ids;
 
   constrain !is_defi_deposit | (defi_deposit_value != 0);
 
-  constrain !(is_defi_deposit & input_note_2_in_use & different_input_asset_ids) | (defi_deposit_value == input_note_2.value);
+  if (is_defi_deposit & input_note_2_in_use & different_input_asset_ids) {
+    constrain defi_deposit_value == input_note_2.value;
+  }
+  // Panics with 'Can only multiply linear terms when this is used'
+  //constrain !(is_defi_deposit & input_note_2_in_use & different_input_asset_ids) | (defi_deposit_value == input_note_2.value);
 
-  // TODO: add bridge_call_data indexing to fetch and constrain call data such as assets ids
+  // TODO TODO: add bridge_call_data indexing to fetch and constrain call data such as assets ids
 
   // Transaction chaining
   let note1_propagated = backward_link == input_note_1.commitment;
   let note2_propagated = backward_link == input_note_2.commitment;
 
   let backward_link_in_use = backward_link != 0;
-  constrain !backward_link_in_use | (note1_propagated | note2_propagated);
+  if backward_link_in_use {
+    constrain note1_propagated | note2_propagated;
+  }
+  // Panics with 'Can only multiply linear terms when this is used'
+  //constrain !backward_link_in_use | (note1_propagated | note2_propagated);
 
   let allow_chain_1_and_2 = allow_chain == 3;
-  let allow_chain_1 = (allow_chain == 1) | allow_chain_1_and_2;
-  let allow_chain_2 = (allow_chain == 2) | allow_chain_1_and_2;
+  // Panics with 'Can only multiply linear terms when this is used'
+  // let allow_chain_1 = (allow_chain == 1) | allow_chain_1_and_2;
+  let mut allow_chain_1 = true;
+  if !(allow_chain == 1) {
+    constrain allow_chain_1_and_2;
+  }
+  // Panics with 'Can only multiply linear terms when this is used'
+  //let allow_chain_2 = (allow_chain == 2) | allow_chain_1_and_2;
+  
+  let mut allow_chain_2 = true;
+  if !(allow_chain == 2) {
+    constrain allow_chain_1_and_2;
+  }
   constrain (allow_chain == 0) | allow_chain_1 | allow_chain_2;
 
   let user_self = input_note_1.owner;
@@ -125,6 +168,7 @@ fn main(
   constrain !is_defi_deposit | !allow_chain_1;
 
   input_note_2_value = input_note_2_value * (!(is_defi_deposit & input_note_2_in_use & different_input_asset_ids)) as Field;
+  //input_note_2_value = 0; // TODO: change this back to line above now that we know where the error comes from
 
   // Derive tx fee
   let total_in_value = public_input + input_note_1_value + input_note_2_value;
@@ -163,7 +207,7 @@ fn main(
     input_note1_index,
     input_note_1,
     note1_propagated,
-    input_note_1_in_use
+    input_note_1_in_use,
   );
 
   let nullifier2 = process_input_note(account_private_key, 
@@ -192,6 +236,7 @@ fn main(
       allow_chain
     ]
   )[0];
+
   let message_byte_array = utils::half_of_field_to_bytes(message);
   let sig_res = std::schnorr::verify_signature(signer[0], signer[1], signature, message_byte_array);
   constrain sig_res == 1;
@@ -215,12 +260,22 @@ fn process_input_note(
   index: Field,
   note: ValueNote,
   is_propagated: bool,
-  is_note_in_use: bool
+  // TODO: currently broken, reference above in the circuit
+  is_note_in_use: bool,
 ) -> Field {
-  constrain (note.value == 0) | is_note_in_use;
+  if note.value != 0 {
+    constrain is_note_in_use;
+  }
+  // Panics with 'Can only multiply linear terms when this is used'
+  //constrain (note.value == 0) | is_note_in_use;
 
   let exists = std::merkle::check_membership(merkle_root, note.commitment, index, hash_path) as bool;
-  constrain exists | is_propagated | !is_note_in_use;
+  
+  if !(exists | is_propagated) {
+    constrain !is_note_in_use;
+  }
+  // Panics with 'Can only multiply linear terms when this is used'
+  //constrain exists | is_propagated | !is_note_in_use;
 
   compute_nullifier(note.commitment, account_private_key, is_note_in_use)
 }

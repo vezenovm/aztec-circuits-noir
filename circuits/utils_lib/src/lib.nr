@@ -13,8 +13,8 @@ fn field_first_four_bytes(input: Field) -> [u8; 4] {
                 byte = (byte << 1) | (input_bits[index+(7-j)] as u8);
             }
         };
+        //byte_array[4 - i - 1] = byte;
         byte_array[i] = byte;
-
     };
     byte_array
 }
