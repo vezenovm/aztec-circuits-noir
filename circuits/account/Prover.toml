@@ -1,0 +1,13 @@
+data_tree_root = ""
+account_public_key = []
+new_account_public_key = []
+spending_public_key_1 = []
+spending_public_key_2 = []
+alias_hash = ""
+create = ""
+migrate = ""
+account_note_index = ""
+account_note_path = []
+signing_pub_key = []
+signature = []
+return = []

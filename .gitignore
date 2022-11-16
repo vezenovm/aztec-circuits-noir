@@ -11,5 +11,8 @@ node_modules/
 .pnp.*
 
 # Noir
-circuits/build/
-circuits/proofs/
+circuits/**/build/
+circuits/**/proofs/
+
+test/**/builds/
+test/**/proofs/
