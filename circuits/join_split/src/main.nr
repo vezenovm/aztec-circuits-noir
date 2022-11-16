@@ -1,5 +1,6 @@
 use dep::std;
 use dep::utils;
+use dep::notes;
 
 // TODO: move these constants to their own constants file
 global DEPOSIT: Field = 1;
@@ -49,12 +50,12 @@ fn main(
   let public_input = public_value * (is_deposit as Field);
   let public_output = public_value * (is_withdraw as Field);
 
-  let input_note_1 = ValueNote::new(input_note1);
-  let input_note_2 = ValueNote::new(input_note2);
-  let output_note_1 = ValueNote::new(output_note1);
-  let output_note_2 = ValueNote::new(output_note2);
+  let input_note_1 = notes::value::ValueNote::new(input_note1);
+  let input_note_2 = notes::value::ValueNote::new(input_note2);
+  let output_note_1 = notes::value::ValueNote::new(output_note1);
+  let output_note_2 = notes::value::ValueNote::new(output_note2);
 
-  let partial_claim_note = PartialClaimNote::new(partial_claim_note, input_note_1.owner, input_note1[5]);
+  let partial_claim_note = notes::claim::PartialClaimNote::new(partial_claim_note, input_note_1.owner, input_note1[5]);
   
   let mut output_note_1_commitment = output_note_1.commitment;
   if is_defi_deposit {
@@ -193,7 +194,7 @@ fn main(
     signer = signing_pub_key;
   }
 
-  let account_note_data = AccountNote::new(alias_hash, account_public_key, signer);
+  let account_note_data = notes::account::AccountNote::new(alias_hash, account_public_key, signer);
   let signing_key_exists = std::merkle::check_membership(
     merkle_root, 
     account_note_data.commitment,
@@ -258,7 +259,7 @@ fn process_input_note(
   merkle_root: Field,
   hash_path: [Field; 32],
   index: Field,
-  note: ValueNote,
+  note: notes::value::ValueNote,
   is_propagated: bool,
   is_note_in_use: bool,
 ) -> Field {
@@ -303,124 +304,9 @@ fn compute_nullifier(
 }
 
 // TODO: move these structs to their own library for notes
-struct ValueNote {
-  owner: [Field; 2],
-  value: Field,
-  secret: Field,
-  asset_id: u30,
-  account_required: u1,
-  input_nullifier: Field,
-  commitment: Field,
-  creator_pubkey: Field
-}
-
-impl ValueNote {
-
-  fn new(
-      note: [Field; 9] // TODO: make a witness_data struct to avoid this gross array
-  ) -> ValueNote {
-    let partial_commitment = std::hash::pedersen(
-      [
-        note[3],
-        note[0],
-        note[1],
-        note[5],
-        note[8],
-        1
-      ]
-    )[0];
-    let commitment = std::hash::pedersen(
-      [
-        partial_commitment,
-        note[2],
-        note[4],
-        note[6]
-      ]
-    )[0];
-    ValueNote {
-      owner: [note[0], note[1]],
-      value: note[2],
-      secret: note[3],
-      asset_id: note[4] as u30,
-      account_required: note[5] as u1,
-      input_nullifier: note[6],
-      commitment: commitment,
-      creator_pubkey: note[8],
-    }
-  }
-
-}
 
 // TODO: move these structs to their own library for notes
-struct PartialClaimNote {
-  deposit_value: Field,
-  bridge_call_data: Field,
-  value_note_partial_commitment: Field,
-  input_nullifier: Field,
-  partial_commitment: Field
-}
 
-impl PartialClaimNote {
-  fn new(
-    note: [Field; 4],
-    owner: [Field; 2],
-    owner_account_required: Field
-  ) -> PartialClaimNote {
-    let value_note_partial_commitment = std::hash::pedersen(
-      [
-        note[2],
-        owner[0],
-        owner[1],
-        owner_account_required
-      ]
-    )[0];
-
-    let partial_commitment = std::hash::pedersen(
-      [
-        note[0],
-        note[1],
-        value_note_partial_commitment,
-        note[3]
-      ]
-    )[0];
-
-    PartialClaimNote {
-      deposit_value: note[0],
-      bridge_call_data: note[1],
-      value_note_partial_commitment: value_note_partial_commitment,
-      input_nullifier: note[3],
-      partial_commitment: partial_commitment
-    }
-  }
-}
 
 // TODO: move these structs to their own library for notes
-struct AccountNote {
-  account_alias_hash: Field,
-  account_public_key: [Field; 2],
-  signing_pub_key: [Field; 2],
-  commitment: Field
-}
 
-impl AccountNote {
-  fn new(
-    account_alias_hash: Field,
-    account_public_key: [Field; 2],
-    signing_pub_key: [Field; 2]
-  ) -> AccountNote {
-    AccountNote {
-      account_alias_hash: account_alias_hash,
-      account_public_key: account_public_key,
-      signing_pub_key: signing_pub_key,
-      commitment: std::hash::pedersen(
-        [
-          account_alias_hash, 
-          account_public_key[0], 
-          account_public_key[1], 
-          signing_pub_key[0], 
-          signing_pub_key[1]
-        ]
-      )[0]
-    }
-  }
-}
