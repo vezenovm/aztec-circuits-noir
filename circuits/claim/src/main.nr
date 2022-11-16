@@ -16,7 +16,6 @@ fn main(
 ) {
     constrain proof_id == DEFI_CLAIM;
 
-    // TODO: create ClaimNote struct. Separate methods for complete_partial_commitment and create_partial_commitment
-
+    // TODO: fix up ClaimNote struct. Separate methods for complete_partial_commitment and create_partial_commitment
     
 }
