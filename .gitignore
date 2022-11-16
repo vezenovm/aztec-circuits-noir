@@ -13,3 +13,6 @@ node_modules/
 # Noir
 circuits/**/build/
 circuits/**/proofs/
+
+test/**/builds/
+test/**/proofs/
