@@ -14,5 +14,5 @@ node_modules/
 circuits/**/build/
 circuits/**/proofs/
 
-test/**/builds/
+test/**/build/
 test/**/proofs/

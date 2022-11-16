@@ -72,19 +72,9 @@ fn main(
   let no_input_notes = num_input_notes == 0;
   let one_input_note = num_input_notes == 1;
   let two_input_notes = num_input_notes == 2;
+  constrain no_input_notes | one_input_note | two_input_notes;
 
-  if !no_input_notes {
-    constrain one_input_note | two_input_notes;
-  }
-  // Panics with 'Can only multiply linear terms when this is used'
-  //constrain no_input_notes | one_input_note | two_input_notes;
-
-  // Cannot use this later in `process_input_note` without the linear term panic
-  //let input_note_1_in_use = one_input_note | two_input_notes;
-  let mut input_note_1_in_use = one_input_note;
-  if !input_note_1_in_use {
-    input_note_1_in_use = two_input_notes;
-  }
+  let input_note_1_in_use = one_input_note | two_input_notes;
   let input_note_2_in_use = two_input_notes;
 
   let equal_input_asset_ids = input_note_1.asset_id == input_note_2.asset_id;
@@ -101,11 +91,7 @@ fn main(
   constrain is_public_tx == (public_value == 0);
   constrain is_public_tx == (public_owner == 0);
 
-  // Panics with 'Can only multiply linear terms when this is used'
-  //constrain is_deposit | is_withdraw | is_send | is_defi_deposit;
-  if !is_deposit | !is_withdraw {
-    constrain is_send | is_defi_deposit;
-  }
+  constrain is_deposit | is_withdraw | is_send | is_defi_deposit;
 
   constrain input_note_1.commitment != input_note_2.commitment;
 
@@ -115,23 +101,10 @@ fn main(
   (asset_id == output_note_1.asset_id) & 
   (asset_id == output_note_2.asset_id);
 
-  let mut send_or_withdraw = true;
-  if !is_deposit {
-    send_or_withdraw = is_send | is_withdraw;
-  }
-  if !equal_input_asset_ids {
-    constrain !(input_note_2_in_use & send_or_withdraw);
-  }
-  // Panics with 'Can only multiply linear terms when this is used'
-  //constrain !(input_note_2_in_use & send_or_withdraw) | equal_input_asset_ids;
+  constrain !(input_note_2_in_use & (is_deposit | is_send | is_withdraw)) | equal_input_asset_ids;
 
-  constrain !is_defi_deposit | (defi_deposit_value != 0);
-
-  if (is_defi_deposit & input_note_2_in_use & different_input_asset_ids) {
-    constrain defi_deposit_value == input_note_2.value;
-  }
-  // Panics with 'Can only multiply linear terms when this is used'
-  //constrain !(is_defi_deposit & input_note_2_in_use & different_input_asset_ids) | (defi_deposit_value == input_note_2.value);
+  constrain !(is_defi_deposit & input_note_2_in_use & different_input_asset_ids) | 
+  (defi_deposit_value == input_note_2.value);
 
   // TODO TODO: add bridge_call_data indexing to fetch and constrain call data such as assets ids
 
@@ -140,26 +113,12 @@ fn main(
   let note2_propagated = backward_link == input_note_2.commitment;
 
   let backward_link_in_use = backward_link != 0;
-  if backward_link_in_use {
-    constrain note1_propagated | note2_propagated;
-  }
-  // Panics with 'Can only multiply linear terms when this is used'
-  //constrain !backward_link_in_use | (note1_propagated | note2_propagated);
+  constrain !backward_link_in_use | (note1_propagated | note2_propagated);
 
   let allow_chain_1_and_2 = allow_chain == 3;
-  // Panics with 'Can only multiply linear terms when this is used'
-  // let allow_chain_1 = (allow_chain == 1) | allow_chain_1_and_2;
-  let mut allow_chain_1 = true;
-  if !(allow_chain == 1) {
-    constrain allow_chain_1_and_2;
-  }
-  // Panics with 'Can only multiply linear terms when this is used'
-  //let allow_chain_2 = (allow_chain == 2) | allow_chain_1_and_2;
-  
-  let mut allow_chain_2 = true;
-  if !(allow_chain == 2) {
-    constrain allow_chain_1_and_2;
-  }
+  let allow_chain_1 = (allow_chain == 1) | allow_chain_1_and_2;
+  let allow_chain_2 = (allow_chain == 2) | allow_chain_1_and_2;
+
   constrain (allow_chain == 0) | allow_chain_1 | allow_chain_2;
 
   let user_self = input_note_1.owner;
@@ -169,7 +128,6 @@ fn main(
   constrain !is_defi_deposit | !allow_chain_1;
 
   input_note_2_value = input_note_2_value * (!(is_defi_deposit & input_note_2_in_use & different_input_asset_ids)) as Field;
-  //input_note_2_value = 0; // TODO: change this back to line above now that we know where the error comes from
 
   // Derive tx fee
   let total_in_value = public_input + input_note_1_value + input_note_2_value;
@@ -263,19 +221,12 @@ fn process_input_note(
   is_propagated: bool,
   is_note_in_use: bool,
 ) -> Field {
-  if note.value != 0 {
-    constrain is_note_in_use;
-  }
-  // Panics with 'Can only multiply linear terms when this is used'
-  //constrain (note.value == 0) | is_note_in_use;
+  // Fixed in in PR #485
+  constrain (note.value == 0) | is_note_in_use;
 
   let exists = std::merkle::check_membership(merkle_root, note.commitment, index, hash_path) as bool;
   
-  if !(exists | is_propagated) {
-    constrain !is_note_in_use;
-  }
-  // Panics with 'Can only multiply linear terms when this is used'
-  //constrain exists | is_propagated | !is_note_in_use;
+  constrain exists | is_propagated | !is_note_in_use;
 
   compute_nullifier(note.commitment, account_private_key, is_note_in_use)
 }
@@ -298,15 +249,9 @@ fn compute_nullifier(
   )[0];
 
   // hash_to_field uses blake2s under the hood and does not require conversion of Field to u8 array and back to Field
-  //let blake_result = std::hash::hash_to_field([compressed_inputs]);
-  //blake_result
-  compressed_inputs
+  // TODO: currently broken
+  let blake_result = std::hash::hash_to_field([compressed_inputs]);
+  blake_result
+  // compressed_inputs
 }
-
-// TODO: move these structs to their own library for notes
-
-// TODO: move these structs to their own library for notes
-
-
-// TODO: move these structs to their own library for notes
 

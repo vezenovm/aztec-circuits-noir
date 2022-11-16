@@ -6,6 +6,8 @@ This currently only has a complete account circuit, while a join split is in pro
 
 ### Can only multiply linear terms
 
+FIXED in Noir PR #485
+
 The code snippet below is from the join split circuit:
 ```
 let no_input_notes = num_input_notes == 0;
@@ -64,6 +66,9 @@ While if I replace `input_note_1_in_use` with simply `false` I compile successfu
 
 ### Max value for opcode hash_to_field
 
+Still BROKEN, reference issue #490 on main Noir repo for updates
+
 When trying to use the Noir std lib function `hash_to_field` we panic in the SSA with this message: `thread 'main' panicked at 'not yet implemented: max value must be implemented for opcode hash_to_field ', crates/noirc_evaluator/src/ssa/integer.rs:494:22`. 
 
 As `hash_to_field` simply returns a Field type I don't see why we couldn't easily implement the max value in SSA. Going to ask about this and implement it if there is not some blocker I am unaware of. 
+
