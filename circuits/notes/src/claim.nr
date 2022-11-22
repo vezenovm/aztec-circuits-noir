@@ -53,36 +53,46 @@ struct ClaimNote {
 }
 
 impl ClaimNote {
-  fn new(
-    note: [Field; 6],
-    owner: [Field; 2],
-    owner_account_required: Field
-  ) -> ClaimNote {
+  fn new(note: ClaimNoteWitnessData) -> ClaimNote {
     let partial_commitment = std::hash::pedersen(
       [
-        note[0],
-        note[1],
-        note[4], // value_note_partial_commitment
-        note[5],
+        note.deposit_value,
+        note.bridge_call_data_local,
+        note.value_note_partial_commitment,
+        note.input_nullifier,
       ]
     )[0];
 
     let commitment = std::hash::pedersen(
       [
         partial_commitment,
-        note[2],
-        note[3],
+        note.defi_interaction_nonce,
+        note.fee,
         // TODO: add GeneratorIndex constants file and use them in all of the commitments
       ]
-    )
+    )[0];
 
     ClaimNote {
-      deposit_value: note[0],
-      bridge_call_data: note[1],
-      value_note_partial_commitment: value_note_partial_commitment,
-      input_nullifier: note[5],
-      fee: note[3],
-      commitment: commitment
+      deposit_value: note.deposit_value,
+      bridge_call_data: note.bridge_call_data_local,
+      value_note_partial_commitment: note.value_note_partial_commitment,
+      input_nullifier: note.input_nullifier,
+      defi_interaction_nonce: note.defi_interaction_nonce,
+      fee: note.fee,
+      commitment: commitment,
     }
   }
+}
+
+fn compute_nullifier(commitment: Field) -> Field {
+  std::hash::pedersen([commitment, 9])[0] // TODO: add GeneratorIndex file
+}
+
+struct ClaimNoteWitnessData {
+  deposit_value: Field,
+  bridge_call_data_local: Field,
+  defi_interaction_nonce: Field,
+  fee: Field,
+  value_note_partial_commitment: Field,
+  input_nullifier: Field,
 }

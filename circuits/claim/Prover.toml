@@ -1,0 +1,11 @@
+proof_id = ""
+data_root = ""
+defi_root = ""
+claim_note_index = ""
+claim_note_path = []
+defi_note_index = ""
+claim_note_data = ""
+defi_interaction_note_path = []
+defi_interaction_note_data = ""
+output_value_a = ""
+output_value_b = ""
