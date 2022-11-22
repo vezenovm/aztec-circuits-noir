@@ -1,4 +1,5 @@
 use dep::std;
+use crate::bridge_call_data::BridgeCallData;
 
 struct PartialClaimNote {
   deposit_value: Field,
@@ -44,7 +45,7 @@ impl PartialClaimNote {
 
 struct ClaimNote {
   deposit_value: Field,
-  bridge_call_data: Field,
+  bridge_call_data: BridgeCallData,
   value_note_partial_commitment: Field,
   input_nullifier: Field,
   defi_interaction_nonce: Field,
@@ -57,7 +58,7 @@ impl ClaimNote {
     let partial_commitment = std::hash::pedersen(
       [
         note.deposit_value,
-        note.bridge_call_data_local,
+        note.bridge_call_data_local.to_field(),
         note.value_note_partial_commitment,
         note.input_nullifier,
       ]
@@ -90,7 +91,7 @@ fn compute_nullifier(commitment: Field) -> Field {
 
 struct ClaimNoteWitnessData {
   deposit_value: Field,
-  bridge_call_data_local: Field,
+  bridge_call_data_local: BridgeCallData,
   defi_interaction_nonce: Field,
   fee: Field,
   value_note_partial_commitment: Field,

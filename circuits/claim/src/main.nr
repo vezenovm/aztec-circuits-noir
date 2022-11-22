@@ -30,8 +30,8 @@ fn main(
     // TODO
     // const bool_ct& second_input_in_use = claim_note_data.bridge_call_data_local.config.second_input_in_use;
     // const bool_ct& second_output_in_use = claim_note_data.bridge_call_data_local.config.second_output_in_use;
-    let second_input_in_use = true;
-    let second_output_in_use = false;
+    let second_input_in_use = claim_note_data.bridge_call_data_local.config.second_input_in_use;
+    let second_output_in_use = claim_note_data.bridge_call_data_local.config.second_output_in_use;
 
     constrain claim_note.deposit_value != 0;
 
@@ -68,13 +68,11 @@ fn main(
     if interaction_success {
         output_value_1 = output_value_a;
     }
-    // let mut output_asset_id_1_if_success = claim_note_data.bridge_call_data_local.output_asset_id_a;
-    let mut output_asset_id_1_if_success = claim_note_data.bridge_call_data_local;
+    let mut output_asset_id_1_if_success = claim_note_data.bridge_call_data_local.output_asset_id_a as Field;
     if first_output_virtual {
         output_asset_id_1_if_success = virtual_note_flag + claim_note.defi_interaction_nonce;
     }
-    // let mut output_asset_id_1 = claim_note_data.bridge_call_data_local.input_asset_id_a;
-    let mut output_asset_id_1 = claim_note_data.bridge_call_data_local;
+    let mut output_asset_id_1 = claim_note_data.bridge_call_data_local.input_asset_id_a as Field;
     if interaction_success {
         output_asset_id_1 = output_asset_id_1_if_success;
     }
@@ -94,13 +92,11 @@ fn main(
     if interaction_success {
         output_value_2 = output_value_b;
     }
-    // let mut output_asset_id_2_if_success = claim_note_data.bridge_call_data_local.output_asset_id_b;
-    let mut output_asset_id_2_if_success = claim_note_data.bridge_call_data_local;
+    let mut output_asset_id_2_if_success = claim_note_data.bridge_call_data_local.output_asset_id_b as Field;
     if second_output_virtual {
         output_asset_id_2_if_success = virtual_note_flag + claim_note.defi_interaction_nonce;
     }
-    // let mut output_asset_id_2 = claim_note_data.bridge_call_data_local.input_asset_id_b;
-    let mut output_asset_id_2 = claim_note_data.bridge_call_data_local;
+    let mut output_asset_id_2 = claim_note_data.bridge_call_data_local.input_asset_id_b as Field;
     if interaction_success {
         output_asset_id_2 = output_asset_id_2_if_success;
     }
@@ -124,7 +120,8 @@ fn main(
 
     output_note_commitment2 = output_note_commitment2 * (output_note_2_exists as Field);
 
-    constrain claim_note.bridge_call_data == defi_interaction_note.bridge_call_data;
+    // TODO: check which is less constraints, converting to a field with bit shifts or checking each field individually
+    constrain claim_note.bridge_call_data.to_field() == defi_interaction_note.bridge_call_data.to_field();
     constrain claim_note.defi_interaction_nonce == defi_interaction_note.interaction_nonce;
 
     let claim_exists = std::merkle::check_membership(
@@ -162,9 +159,8 @@ fn main(
         asset_id,
         data_root,
         claim_note.fee,
-        // claim_note_data.bridge_call_data_local.input_asset_id_a.set_public(); 
-        claim_note_data.bridge_call_data_local, // TODO, make a bridge_call_data struct
-        claim_note.bridge_call_data,
+        claim_note_data.bridge_call_data_local.input_asset_id_a as Field,
+        claim_note.bridge_call_data.to_field(),
         defi_deposit_value,
         defi_root,
         backward_link,
