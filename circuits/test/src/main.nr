@@ -41,20 +41,30 @@ defi_interaction_note_data: notes::defi_interaction::WitnessData,
         config: config,
         aux_data: 0 as u64,
     };
+    let claim_note_data2 = notes::claim::ClaimNoteWitnessData {
+        deposit_value: 0,
+        bridge_call_data_local: b_call_data,
+        defi_interaction_nonce: 0,
+        fee: 0,
+        value_note_partial_commitment: 0,
+        input_nullifier: 1,       
+    };
 
-    // Error when using this
-    let claim_note = notes::claim::ClaimNote::new(claim_note_data);
-    let defi_interaction_note = notes::defi_interaction::Note::new(defi_interaction_note_data);
+    // Error when using this, either using the WitnessData struct from the ABI or the one created directly in Noir
+    // let claim_note = notes::claim::ClaimNote::new(claim_note_data);
+    let claim_note = notes::claim::ClaimNote::new(claim_note_data2);
 
     // No error when using this
     // let claim_note = notes::claim::ClaimNote {
-    //   deposit_value: 0,
-    //   bridge_call_data: b_call_data,
-    //   value_note_partial_commitment: 0,
-    //   input_nullifier: 0,
-    //   defi_interaction_nonce: 0,
-    //   fee: 0,
-    //   commitment: 0,
+    //   deposit_value: claim_note_data2.deposit_value,
+    //   bridge_call_data: claim_note_data2.bridge_call_data_local,
+    //   value_note_partial_commitment: claim_note_data2.value_note_partial_commitment,
+    //   input_nullifier: claim_note_data2.input_nullifier,
+    //   defi_interaction_nonce: claim_note_data2.defi_interaction_nonce,
+    //   fee: claim_note_data2.fee,
+    //   commitment: 1,
     // };
     let k = claim_note.value_note_partial_commitment * y;
+
+    // let defi_interaction_note = notes::defi_interaction::Note::new(defi_interaction_note_data);
 }
