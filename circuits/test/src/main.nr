@@ -27,9 +27,9 @@ defi_interaction_note_data: notes::defi_interaction::WitnessData,
     let c = Child { child2: j, foo: a, bar: b };
     let p = Parent { foo: x, child: c, bar: y };
 
-    constrain x == p.foo;
-
     let q = p.foo * y;
+
+    constrain x == p.foo;
 
     let config = notes::bridge_call_data::bit_config { second_input_in_use: true, second_output_in_use: false };
     let b_call_data = notes::bridge_call_data::BridgeCallData { 
@@ -42,16 +42,19 @@ defi_interaction_note_data: notes::defi_interaction::WitnessData,
         aux_data: 0 as u64,
     };
 
+    // Error when using this
     let claim_note = notes::claim::ClaimNote::new(claim_note_data);
     let defi_interaction_note = notes::defi_interaction::Note::new(defi_interaction_note_data);
+
+    // No error when using this
     // let claim_note = notes::claim::ClaimNote {
-    //     deposit_value: 0,
-    //     bridge_call_data: b_call_data,
-    //     value_note_partial_commitment: 0,
-    //     input_nullifier: 0,
-    //     defi_interaction_nonce: 0,
-    //     fee: 0,
-    //     commitment: 0,
+    //   deposit_value: 0,
+    //   bridge_call_data: b_call_data,
+    //   value_note_partial_commitment: 0,
+    //   input_nullifier: 0,
+    //   defi_interaction_nonce: 0,
+    //   fee: 0,
+    //   commitment: 0,
     // };
     let k = claim_note.value_note_partial_commitment * y;
 }
