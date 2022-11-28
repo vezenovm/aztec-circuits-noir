@@ -87,8 +87,9 @@ fn main(
         output_asset_id_1 = output_asset_id_1_if_success;
     }
 
-    output_note_commitment1 = circuit::value::complete_partial_commitment(
-        claim_note.value_note_partial_commitment, output_value_1, output_asset_id_1, nullifier1);
+    // NOTE: Commitment computation from C++
+    // output_note_commitment1 = circuit::value::complete_partial_commitment(
+    //     claim_note.value_note_partial_commitment, output_value_1, output_asset_id_1, nullifier1);
     let output_note_commitment1 = std::hash::pedersen(
         [
             claim_note.value_note_partial_commitment,
