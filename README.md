@@ -72,3 +72,20 @@ When trying to use the Noir std lib function `hash_to_field` we panic in the SSA
 
 As `hash_to_field` simply returns a Field type I don't see why we couldn't easily implement the max value in SSA. Going to ask about this and implement it if there is not some blocker I am unaware of. 
 
+
+### failed to convert an object type into a numeric type
+
+```
+constrain (claim_note.deposit_value / defi_interaction_note.total_input_value) == (output_value_a / defi_interaction_note.total_output_value_a);
+```
+
+### assertion failed: left: Boolean, right: Unisighed(30)
+
+```
+thread 'main' panicked at 'assertion failed: `(left == right)`
+  left: `Boolean`,
+ right: `Unsigned(30)`', crates/noirc_evaluator/src/ssa/node.rs:776:17
+stack backtrace:
+```
+
+Possible error with new structs input PR and how we are reading in the ABI

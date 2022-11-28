@@ -73,6 +73,15 @@ impl ClaimNote {
       ]
     )[0];
 
+    // let bridge_data = BridgeCallData {
+    //   bridge_address_id: note.bridge_call_data_local.bridge_address_id,
+    //   input_asset_id_a: note.bridge_call_data_local.input_asset_id_a,
+    //   input_asset_id_b: note.bridge_call_data_local.input_asset_id_a,
+    //   output_asset_id_a: note.bridge_call_data_local.output_asset_id_a,
+    //   output_asset_id_b: note.bridge_call_data_local.output_asset_id_b,
+    //   config: note.bridge_call_data_local.config,
+    //   aux_data: note.bridge_call_data_local.aux_data,
+    // };
     ClaimNote {
       deposit_value: note.deposit_value,
       bridge_call_data: note.bridge_call_data_local,

@@ -9,7 +9,7 @@ use crate::constants;
 // constexpr uint32_t aux_data_shift = bitconfig_shift + DEFI_BRIDGE_BITCONFIG_LEN;
 
 // TODO: add const expressions to globals
-global input_asset_id_a_shift: Field = 32;
+global input_asset_id_a_shift = 32;
 global input_asset_id_b_shift = 62;
 global output_asset_id_a_shift = 92;
 global output_asset_id_b_shift = 122;
@@ -53,13 +53,18 @@ impl BridgeCallData {
     // TODO: this is to_safe_uint in C++ code, our max integer is half our field though
     // so we should check if this is accurate to write
     fn to_field(self: Self) -> Field {
-        let one: comptime Field = 1;
+        // let one: comptime Field = 1;
+        constrain self.input_asset_id_a != 0;
+        // let result = one as u126 << input_asset_id_a_shift;
+        let result = 1; 
+        // TODO: incorporate this into Noir, requires bit shifts to be allowed on Field Elements
+        // Could perhaps perform the same code using bit powers of 2 instead
 
-        let result = (self.bridge_address_id as Field) + (self.input_asset_id_a as Field * (one << input_asset_id_a_shift)) +
-                        (self.input_asset_id_b as Field * (one << input_asset_id_b_shift)) +
-                        (self.output_asset_id_a as Field * (one << output_asset_id_a_shift)) +
-                        (self.output_asset_id_b as Field * (one << output_asset_id_b_shift)) + self.config.to_suint() +
-                        (self.aux_data as Field * (one << aux_data_shift));
+        // let result = (self.bridge_address_id as Field) + (self.input_asset_id_a as Field * (one << input_asset_id_a_shift)) +
+        //                 (self.input_asset_id_b as Field * (one << input_asset_id_b_shift)) +
+        //                 (self.output_asset_id_a as Field * (one << output_asset_id_a_shift)) +
+        //                 (self.output_asset_id_b as Field * (one << output_asset_id_b_shift)) + self.config.to_suint() +
+        //                 (self.aux_data as Field * (one << aux_data_shift));
         result
     }  
 }

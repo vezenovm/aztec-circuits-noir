@@ -1,13 +1,13 @@
 use dep::std;
-use crate::bridge_call_data::BridgeCallData;
+use crate::bridge_call_data;
 
 struct Note {
-  bridge_call_data: BridgeCallData,
+  bridge_call_data: bridge_call_data::BridgeCallData,
   interaction_nonce: Field,
   total_input_value: Field,
   total_output_value_a: Field,
   total_output_value_b: Field,
-  interaction_result: bool,
+  interaction_result: u1,
   commitment: Field,
 }
 
@@ -40,16 +40,16 @@ impl Note {
 
 fn compute_nullifier(
   defi_interaction_note_commitment: Field,
-  nonce: Field
+  nonce: Field,
 ) -> Field {
   std::hash::pedersen([defi_interaction_note_commitment, nonce, 11])[0] // TODO: add GeneratorIndex file
 }
 
 struct WitnessData {
-    bridge_call_data_local: BridgeCallData,
+    bridge_call_data_local: bridge_call_data::BridgeCallData,
     interaction_nonce: Field,
     total_input_value: Field,
     total_output_value_a: Field,
     total_output_value_b: Field,
-    interaction_result: bool,
+    interaction_result: u1,
 }
