@@ -1,13 +1,13 @@
 use dep::std;
-use crate::bridge_call_data;
+use crate::bridge_call_data::BridgeCallData;
 
 struct Note {
-  bridge_call_data: bridge_call_data::BridgeCallData,
+  bridge_call_data: BridgeCallData,
   interaction_nonce: Field,
-  total_input_value: Field,
+  total_input_value: u126,
   total_output_value_a: Field,
   total_output_value_b: Field,
-  interaction_result: u1,
+  interaction_result: bool,
   commitment: Field,
 }
 
@@ -18,7 +18,7 @@ impl Note {
     let commitment = std::hash::pedersen(
       [
         data.bridge_call_data_local.to_field(),
-        data.total_input_value,
+        data.total_input_value as Field,
         data.total_output_value_a,
         data.total_output_value_b,
         data.interaction_nonce,
@@ -46,10 +46,10 @@ fn compute_nullifier(
 }
 
 struct WitnessData {
-    bridge_call_data_local: bridge_call_data::BridgeCallData,
+    bridge_call_data_local: BridgeCallData,
     interaction_nonce: Field,
-    total_input_value: Field,
+    total_input_value: u126,
     total_output_value_a: Field,
     total_output_value_b: Field,
-    interaction_result: u1,
+    interaction_result: bool,
 }

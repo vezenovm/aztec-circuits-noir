@@ -44,7 +44,7 @@ impl PartialClaimNote {
 }
 
 struct ClaimNote {
-  deposit_value: Field,
+  deposit_value: u126,
   bridge_call_data: BridgeCallData,
   value_note_partial_commitment: Field,
   input_nullifier: Field,
@@ -57,7 +57,7 @@ impl ClaimNote {
   fn new(note: ClaimNoteWitnessData) -> ClaimNote {
     let partial_commitment = std::hash::pedersen(
       [
-        note.deposit_value,
+        note.deposit_value as Field,
         note.bridge_call_data_local.to_field(),
         note.value_note_partial_commitment,
         note.input_nullifier,
@@ -73,15 +73,6 @@ impl ClaimNote {
       ]
     )[0];
 
-    // let bridge_data = BridgeCallData {
-    //   bridge_address_id: note.bridge_call_data_local.bridge_address_id,
-    //   input_asset_id_a: note.bridge_call_data_local.input_asset_id_a,
-    //   input_asset_id_b: note.bridge_call_data_local.input_asset_id_a,
-    //   output_asset_id_a: note.bridge_call_data_local.output_asset_id_a,
-    //   output_asset_id_b: note.bridge_call_data_local.output_asset_id_b,
-    //   config: note.bridge_call_data_local.config,
-    //   aux_data: note.bridge_call_data_local.aux_data,
-    // };
     ClaimNote {
       deposit_value: note.deposit_value,
       bridge_call_data: note.bridge_call_data_local,
@@ -99,7 +90,7 @@ fn compute_nullifier(commitment: Field) -> Field {
 }
 
 struct ClaimNoteWitnessData {
-  deposit_value: Field,
+  deposit_value: u126,
   bridge_call_data_local: BridgeCallData,
   defi_interaction_nonce: Field,
   fee: Field,

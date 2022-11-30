@@ -16,7 +16,7 @@ fn main(
     defi_interaction_note_data: notes::defi_interaction::WitnessData,
     output_value_a: Field,
     output_value_b: Field,
-)  -> pub [Field; 16] {
+) -> pub [Field; 16] {
     constrain proof_id == DEFI_CLAIM;
 
     let claim_note = notes::claim::ClaimNote::new(claim_note_data);
@@ -25,17 +25,15 @@ fn main(
 
     // TODO: add methods for bridge_call_data
     // circuit::get_asset_id_flag(claim_note_data.bridge_call_data_local.output_asset_id_a);
-    let first_output_virtual = true;
-    let second_output_virtual = false;
-    // TODO
-    // // const bool_ct& second_input_in_use = claim_note_data.bridge_call_data_local.config.second_input_in_use;
-    // // const bool_ct& second_output_in_use = claim_note_data.bridge_call_data_local.config.second_output_in_use;
+    let first_output_virtual = notes::bridge_call_data::get_asset_id_flag(claim_note_data.bridge_call_data_local.output_asset_id_a);
+    let second_output_virtual = notes::bridge_call_data::get_asset_id_flag(claim_note_data.bridge_call_data_local.output_asset_id_b);
+
     let second_input_in_use = claim_note_data.bridge_call_data_local.config.second_input_in_use;
     let second_output_in_use = claim_note_data.bridge_call_data_local.config.second_output_in_use;
 
     constrain claim_note.deposit_value != 0;
 
-    // TODO: Fields cannot be compared need to change the inputs here
+    // NOTE: Fields cannot be compared as these inputs are specified as Noir's largest integer type when using the aztec_backend: u126
     constrain (claim_note.deposit_value < defi_interaction_note.total_input_value) | (claim_note.deposit_value == defi_interaction_note.total_input_value);
     constrain (defi_interaction_note.total_input_value - claim_note.deposit_value) >= 0;
 
@@ -48,19 +46,9 @@ fn main(
     //   defi_interaction_note.total_input_value != 0
     //   defi_interaction_note.total_output_value_a != 0 (unless output_value_a == 0)
     //   defi_interaction_note.total_output_value_b != 0 (unless output_value_b == 0)
-
-    // NOTE: when I am using the note_data structs from the main inputs, I get the correct fields, 
-    // but the objects I construct from the inputs such as `claim_note`
-    // seem to have mismatches. Check whether it is simply an error of my code or actually an ABI error now.
-    // NOTE: Error looks like it may be here: https://github.com/noir-lang/noir/blob/829c76c04195eb2b5a70c190a90dad9cdb6ecf82/crates/noirc_evaluator/src/ssa/code_gen.rs#L445
-    // We simply are not generating nested structs correctly right now in the codegen
-    // let a_ratio1 = claim_note.bridge_call_data.aux_data + defi_interaction_note_data.total_input_value as u64;
-    // let a_ratio1 = claim_note.value_note_partial_commitment * defi_interaction_note_data.total_input_value;
-    // let b_ratio1 = (output_value_a * defi_interaction_note.total_input_value);
-    // constrain a_ratio1 == b_ratio1;
-    constrain (claim_note.deposit_value / defi_interaction_note.total_input_value) == (output_value_a / defi_interaction_note.total_output_value_a);
+    constrain ((claim_note.deposit_value / defi_interaction_note.total_input_value) as Field) == (output_value_a / defi_interaction_note.total_output_value_a);
     
-    constrain (claim_note.deposit_value / defi_interaction_note.total_input_value) == (output_value_b / defi_interaction_note.total_output_value_b);
+    constrain ((claim_note.deposit_value / defi_interaction_note.total_input_value) as Field) == (output_value_b / defi_interaction_note.total_output_value_b);
 
     let nullifier1 = notes::claim::compute_nullifier(claim_note.commitment);
 
@@ -74,7 +62,7 @@ fn main(
     // If the defi interaction was unsuccessful, refund the original defi_deposit_value (which was denominated in
     // bridge input_asset_id_a) via output note 1.
     let interaction_success = defi_interaction_note.interaction_result;
-    let mut output_value_1 = claim_note_data.deposit_value;
+    let mut output_value_1 = claim_note_data.deposit_value as Field;
     if interaction_success {
         output_value_1 = output_value_a;
     }
@@ -99,7 +87,7 @@ fn main(
         ]
     )[0];
 
-    let mut output_value_2 = claim_note_data.deposit_value;
+    let mut output_value_2 = claim_note_data.deposit_value as Field;
     if interaction_success {
         output_value_2 = output_value_b;
     }
@@ -151,7 +139,6 @@ fn main(
     );
     constrain din_exists == 1;
 
-
     let public_value = 0;
     let public_owner = 0;
     let asset_id = 0;
@@ -177,6 +164,4 @@ fn main(
         backward_link,
         allow_chain
     ]
-
-    // [0; 16]
 }
