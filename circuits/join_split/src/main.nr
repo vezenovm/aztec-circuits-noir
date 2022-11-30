@@ -16,11 +16,11 @@ fn main(
   num_input_notes: Field,
   input_note1_index: Field,
   input_note2_index: Field,
-  input_note1: [Field; 9], // TODO: all the notes contain lots of data and should be made into structs
-  input_note2: [Field; 9],
-  output_note1: [Field; 9],
-  output_note2: [Field; 9],
-  partial_claim_note: [Field; 4], // TODO: needs to be moved into its own lib for construction of struct
+  input_note1: notes::value::WitnessData, // TODO: all the notes contain lots of data and should be made into structs
+  input_note2: notes::value::WitnessData,
+  output_note1: notes::value::WitnessData,
+  output_note2: notes::value::WitnessData,
+  partial_claim_note_data: notes::claim::PartialClaimNoteWitnessData, // TODO: needs to be moved into its own lib for construction of struct
   signing_pub_key: [Field; 2],
   signature: [u8; 64],
   merkle_root: Field,
@@ -55,7 +55,7 @@ fn main(
   let output_note_1 = notes::value::ValueNote::new(output_note1);
   let output_note_2 = notes::value::ValueNote::new(output_note2);
 
-  let partial_claim_note = notes::claim::PartialClaimNote::new(partial_claim_note, input_note_1.owner, input_note1[5]);
+  let partial_claim_note = notes::claim::PartialClaimNote::new(partial_claim_note_data, input_note_1.owner, input_note1.account_required);
   
   let mut output_note_1_commitment = output_note_1.commitment;
   if is_defi_deposit {
@@ -65,7 +65,7 @@ fn main(
   let mut defi_deposit_value = 0;
   let mut bridge_call_data = 0;
   if is_defi_deposit {
-    defi_deposit_value = partial_claim_note.deposit_value;
+    defi_deposit_value = partial_claim_note.deposit_value as Field;
     bridge_call_data = partial_claim_note.bridge_call_data;
   }
 
@@ -250,8 +250,8 @@ fn compute_nullifier(
 
   // hash_to_field uses blake2s under the hood and does not require conversion of Field to u8 array and back to Field
   // TODO: currently broken
-  let blake_result = std::hash::hash_to_field([compressed_inputs]);
-  blake_result
-  // compressed_inputs
+  // let blake_result = std::hash::hash_to_field([compressed_inputs]);
+  // blake_result
+  compressed_inputs
 }
 
