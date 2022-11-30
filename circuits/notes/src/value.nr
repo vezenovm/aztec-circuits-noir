@@ -14,36 +14,47 @@ struct ValueNote {
 impl ValueNote {
 
   fn new(
-      note: [Field; 9] // TODO: make a witness_data struct to avoid this gross array
+      data: WitnessData
   ) -> ValueNote {
     let partial_commitment = std::hash::pedersen(
       [
-        note[3],
-        note[0],
-        note[1],
-        note[5],
-        note[8],
-        1
+        data.secret,
+        data.owner[0],
+        data.owner[1],
+        data.account_required as Field,
+        data.creator_pubkey,
+        1 // TODO: constants file for GeneratorIndex::VALUE_NOTE_PARTIAL_COMMITMENT
       ]
     )[0];
+
     let commitment = std::hash::pedersen(
       [
         partial_commitment,
-        note[2],
-        note[4],
-        note[6]
+        data.value,
+        data.asset_id as Field,
+        data.input_nullifier
       ]
     )[0];
+
     ValueNote {
-      owner: [note[0], note[1]],
-      value: note[2],
-      secret: note[3],
-      asset_id: note[4] as u30,
-      account_required: note[5] as u1,
-      input_nullifier: note[6],
+      owner: data.owner,
+      value: data.value,
+      secret: data.secret,
+      asset_id: data.asset_id,
+      account_required: data.account_required as u1,
+      input_nullifier: data.input_nullifier,
       commitment: commitment,
-      creator_pubkey: note[8],
+      creator_pubkey: data.creator_pubkey,
     }
   }
+}
 
+struct WitnessData {
+  owner: [Field; 2],
+  value: Field,
+  secret: Field,
+  asset_id: u30,
+  account_required: bool,
+  creator_pubkey: Field,
+  input_nullifier: Field,
 }
