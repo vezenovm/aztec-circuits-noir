@@ -9,3 +9,4 @@ defi_interaction_note_path = []
 defi_interaction_note_data = ""
 output_value_a = ""
 output_value_b = ""
+return = ""

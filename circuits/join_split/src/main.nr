@@ -221,7 +221,7 @@ fn process_input_note(
   is_propagated: bool,
   is_note_in_use: bool,
 ) -> Field {
-  // Fixed in in PR #485
+  // Fixed in PR #485
   constrain (note.value == 0) | is_note_in_use;
 
   let exists = std::merkle::check_membership(merkle_root, note.commitment, index, hash_path) as bool;

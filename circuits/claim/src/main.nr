@@ -16,7 +16,7 @@ fn main(
     defi_interaction_note_data: notes::defi_interaction::WitnessData,
     output_value_a: Field,
     output_value_b: Field,
-)  -> pub [Field; 16] {
+) -> pub [Field; 16] {
     constrain proof_id == DEFI_CLAIM;
 
     let claim_note = notes::claim::ClaimNote::new(claim_note_data);
@@ -25,18 +25,16 @@ fn main(
 
     // TODO: add methods for bridge_call_data
     // circuit::get_asset_id_flag(claim_note_data.bridge_call_data_local.output_asset_id_a);
-    let first_output_virtual = true;
-    let second_output_virtual = false;
-    // TODO
-    // const bool_ct& second_input_in_use = claim_note_data.bridge_call_data_local.config.second_input_in_use;
-    // const bool_ct& second_output_in_use = claim_note_data.bridge_call_data_local.config.second_output_in_use;
-    let second_input_in_use = true;
-    let second_output_in_use = false;
+    let first_output_virtual = notes::bridge_call_data::get_asset_id_flag(claim_note_data.bridge_call_data_local.output_asset_id_a);
+    let second_output_virtual = notes::bridge_call_data::get_asset_id_flag(claim_note_data.bridge_call_data_local.output_asset_id_b);
+
+    let second_input_in_use = claim_note_data.bridge_call_data_local.config.second_input_in_use;
+    let second_output_in_use = claim_note_data.bridge_call_data_local.config.second_output_in_use;
 
     constrain claim_note.deposit_value != 0;
 
-    // TODO: Fields cannot be compared need to change the inputs here
-    // constrain (claim_note.deposit_value < defi_interaction_note.total_input_value) | (claim_note.deposit_value == defi_interaction_note.total_input_value);
+    // NOTE: Fields cannot be compared as these inputs are specified as Noir's largest integer type when using the aztec_backend: u126
+    constrain (claim_note.deposit_value < defi_interaction_note.total_input_value) | (claim_note.deposit_value == defi_interaction_note.total_input_value);
     constrain (defi_interaction_note.total_input_value - claim_note.deposit_value) >= 0;
 
     constrain (defi_interaction_note.total_output_value_a - output_value_a) >= 0;
@@ -48,10 +46,9 @@ fn main(
     //   defi_interaction_note.total_input_value != 0
     //   defi_interaction_note.total_output_value_a != 0 (unless output_value_a == 0)
     //   defi_interaction_note.total_output_value_b != 0 (unless output_value_b == 0)
-
-    constrain (claim_note.deposit_value / defi_interaction_note.total_input_value) == (output_value_a / defi_interaction_note.total_output_value_a);
+    constrain ((claim_note.deposit_value / defi_interaction_note.total_input_value) as Field) == (output_value_a / defi_interaction_note.total_output_value_a);
     
-    constrain (claim_note.deposit_value / defi_interaction_note.total_input_value) == (output_value_b / defi_interaction_note.total_output_value_b);
+    constrain ((claim_note.deposit_value / defi_interaction_note.total_input_value) as Field) == (output_value_b / defi_interaction_note.total_output_value_b);
 
     let nullifier1 = notes::claim::compute_nullifier(claim_note.commitment);
 
@@ -60,25 +57,25 @@ fn main(
     // Compute output notes.
     // const auto virtual_note_flag = suint_ct(uint256_t(1) << (MAX_NUM_ASSETS_BIT_LENGTH - 1));
     let virtual_note_flag = ((1 as u64) << 29) as Field;
+    // let virtual_note_flag = 1;
 
     // If the defi interaction was unsuccessful, refund the original defi_deposit_value (which was denominated in
     // bridge input_asset_id_a) via output note 1.
     let interaction_success = defi_interaction_note.interaction_result;
-    let mut output_value_1 = claim_note_data.deposit_value;
+    let mut output_value_1 = claim_note_data.deposit_value as Field;
     if interaction_success {
         output_value_1 = output_value_a;
     }
-    // let mut output_asset_id_1_if_success = claim_note_data.bridge_call_data_local.output_asset_id_a;
-    let mut output_asset_id_1_if_success = claim_note_data.bridge_call_data_local;
+    let mut output_asset_id_1_if_success = claim_note_data.bridge_call_data_local.output_asset_id_a as Field;
     if first_output_virtual {
         output_asset_id_1_if_success = virtual_note_flag + claim_note.defi_interaction_nonce;
     }
-    // let mut output_asset_id_1 = claim_note_data.bridge_call_data_local.input_asset_id_a;
-    let mut output_asset_id_1 = claim_note_data.bridge_call_data_local;
+    let mut output_asset_id_1 = claim_note_data.bridge_call_data_local.input_asset_id_a as Field;
     if interaction_success {
         output_asset_id_1 = output_asset_id_1_if_success;
     }
 
+    // NOTE: Commitment computation from C++
     // output_note_commitment1 = circuit::value::complete_partial_commitment(
     //     claim_note.value_note_partial_commitment, output_value_1, output_asset_id_1, nullifier1);
     let output_note_commitment1 = std::hash::pedersen(
@@ -90,17 +87,15 @@ fn main(
         ]
     )[0];
 
-    let mut output_value_2 = claim_note_data.deposit_value;
+    let mut output_value_2 = claim_note_data.deposit_value as Field;
     if interaction_success {
         output_value_2 = output_value_b;
     }
-    // let mut output_asset_id_2_if_success = claim_note_data.bridge_call_data_local.output_asset_id_b;
-    let mut output_asset_id_2_if_success = claim_note_data.bridge_call_data_local;
+    let mut output_asset_id_2_if_success = claim_note_data.bridge_call_data_local.output_asset_id_b as Field;
     if second_output_virtual {
         output_asset_id_2_if_success = virtual_note_flag + claim_note.defi_interaction_nonce;
     }
-    // let mut output_asset_id_2 = claim_note_data.bridge_call_data_local.input_asset_id_b;
-    let mut output_asset_id_2 = claim_note_data.bridge_call_data_local;
+    let mut output_asset_id_2 = claim_note_data.bridge_call_data_local.input_asset_id_b as Field;
     if interaction_success {
         output_asset_id_2 = output_asset_id_2_if_success;
     }
@@ -124,7 +119,8 @@ fn main(
 
     output_note_commitment2 = output_note_commitment2 * (output_note_2_exists as Field);
 
-    constrain claim_note.bridge_call_data == defi_interaction_note.bridge_call_data;
+    // TODO: check which is less constraints, converting to a field with bit shifts or checking each field individually
+    constrain claim_note.bridge_call_data.to_field() == defi_interaction_note.bridge_call_data.to_field();
     constrain claim_note.defi_interaction_nonce == defi_interaction_note.interaction_nonce;
 
     let claim_exists = std::merkle::check_membership(
@@ -142,7 +138,6 @@ fn main(
         defi_interaction_note_path,
     );
     constrain din_exists == 1;
-
 
     let public_value = 0;
     let public_owner = 0;
@@ -162,9 +157,8 @@ fn main(
         asset_id,
         data_root,
         claim_note.fee,
-        // claim_note_data.bridge_call_data_local.input_asset_id_a.set_public(); 
-        claim_note_data.bridge_call_data_local, // TODO, make a bridge_call_data struct
-        claim_note.bridge_call_data,
+        claim_note_data.bridge_call_data_local.input_asset_id_a as Field,
+        claim_note.bridge_call_data.to_field(),
         defi_deposit_value,
         defi_root,
         backward_link,
