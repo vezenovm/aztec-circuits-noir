@@ -79,7 +79,8 @@ fn main(
         ]
     )[0];
     constrain message != 0;
-    let message_byte_array = utils::field_to_bytes(message);
+    
+    let message_byte_array = std::to_bytes(message, 31);
     let sig_res = std::schnorr::verify_signature(signer[0], signer[1], signature, message_byte_array);
     constrain sig_res == 1;
 
