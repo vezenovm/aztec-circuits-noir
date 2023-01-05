@@ -196,7 +196,7 @@ fn main(
     ]
   )[0];
 
-  let message_byte_array = utils::field_to_bytes(message);
+  let message_byte_array = std::to_bytes(message, 31 as u32);
   let sig_res = std::schnorr::verify_signature(signer[0], signer[1], signature, message_byte_array);
   constrain sig_res == 1;
 
@@ -248,10 +248,6 @@ fn compute_nullifier(
     ]
   )[0];
 
-  // hash_to_field uses blake2s under the hood and does not require conversion of Field to u8 array and back to Field
-  // TODO: currently broken
-  // let blake_result = std::hash::hash_to_field([compressed_inputs]);
-  // blake_result
-  compressed_inputs
+  let blake_result = std::hash::hash_to_field([compressed_inputs]);
+  blake_result
 }
-
