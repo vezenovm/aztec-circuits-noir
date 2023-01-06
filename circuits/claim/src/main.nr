@@ -31,33 +31,19 @@ fn main(
     let second_input_in_use = claim_note_data.bridge_call_data_local.config.second_input_in_use;
     let second_output_in_use = claim_note_data.bridge_call_data_local.config.second_output_in_use;
 
-    constrain claim_note.deposit_value != 0;
-
-    // NOTE: Fields cannot be compared as these inputs are specified as Noir's largest integer type when using the aztec_backend: u126
-    constrain (claim_note.deposit_value < defi_interaction_note.total_input_value) | (claim_note.deposit_value == defi_interaction_note.total_input_value);
-    constrain (defi_interaction_note.total_input_value - claim_note.deposit_value) >= 0;
-
-    constrain (defi_interaction_note.total_output_value_a - output_value_a) >= 0;
-
-    constrain (defi_interaction_note.total_output_value_b - output_value_b) >= 0;
-
-    // Ratio checks.
-    // Note, these ratio_checks also guarantee:
-    //   defi_interaction_note.total_input_value != 0
-    //   defi_interaction_note.total_output_value_a != 0 (unless output_value_a == 0)
-    //   defi_interaction_note.total_output_value_b != 0 (unless output_value_b == 0)
-    constrain ((claim_note.deposit_value / defi_interaction_note.total_input_value) as Field) == (output_value_a / defi_interaction_note.total_output_value_a);
-    
-    constrain ((claim_note.deposit_value / defi_interaction_note.total_input_value) as Field) == (output_value_b / defi_interaction_note.total_output_value_b);
+    validate_notes(
+        claim_note,
+        defi_interaction_note,
+        output_value_a,
+        output_value_b
+    );
 
     let nullifier1 = notes::claim::compute_nullifier(claim_note.commitment);
-
     let nullifier2 = notes::defi_interaction::compute_nullifier(defi_interaction_note.commitment, claim_note.commitment);
 
     // Compute output notes.
     // const auto virtual_note_flag = suint_ct(uint256_t(1) << (MAX_NUM_ASSETS_BIT_LENGTH - 1));
     let virtual_note_flag = ((1 as u64) << 29) as Field;
-    // let virtual_note_flag = 1;
 
     // If the defi interaction was unsuccessful, refund the original defi_deposit_value (which was denominated in
     // bridge input_asset_id_a) via output note 1.
@@ -75,15 +61,12 @@ fn main(
         output_asset_id_1 = output_asset_id_1_if_success;
     }
 
-    // NOTE: Commitment computation from C++
-    // output_note_commitment1 = circuit::value::complete_partial_commitment(
-    //     claim_note.value_note_partial_commitment, output_value_1, output_asset_id_1, nullifier1);
     let output_note_commitment1 = std::hash::pedersen(
         [
             claim_note.value_note_partial_commitment,
             output_value_1,
             output_asset_id_1,
-            nullifier1, // TODO add a VALUE_NOTE_COMMITMENT generator index
+            nullifier1, // TODO add a VALUE_NOTE_COMMITMENT generator index for complete_partial_commitment
         ]
     )[0];
 
@@ -119,10 +102,14 @@ fn main(
 
     output_note_commitment2 = output_note_commitment2 * (output_note_2_exists as Field);
 
+    // Check claim note and interaction note are related.
     // TODO: check which is less constraints, converting to a field with bit shifts or checking each field individually
     constrain claim_note.bridge_call_data.to_field() == defi_interaction_note.bridge_call_data.to_field();
     constrain claim_note.defi_interaction_nonce == defi_interaction_note.interaction_nonce;
 
+    // Existence checks
+
+    // Check claim note exists:
     let claim_exists = std::merkle::check_membership(
         data_root,
         claim_note.commitment,
@@ -131,6 +118,7 @@ fn main(
     );
     constrain claim_exists == 1;
 
+    // Check defi interaction note exists:
     let din_exists = std::merkle::check_membership(
         data_root,
         defi_interaction_note.commitment,
@@ -164,4 +152,39 @@ fn main(
         backward_link,
         allow_chain
     ]
+}
+
+fn validate_notes(
+    claim_note: notes::claim::ClaimNote,
+    defi_interaction_note: notes::defi_interaction::Note,
+    output_value_a: Field,
+    output_value_b: Field,
+) {
+    // Don't support zero deposits (because they're illogical):
+    constrain claim_note.deposit_value != 0;
+    // NOTE: Fields cannot be compared as these inputs are specified as Noir's largest integer type when using the aztec_backend: u126
+    constrain (claim_note.deposit_value < defi_interaction_note.total_input_value) | (claim_note.deposit_value == defi_interaction_note.total_input_value);
+    // Ensure deposit_value <= total_input_value
+    constrain (defi_interaction_note.total_input_value - claim_note.deposit_value) >= 0;
+    // These checks are superfluous, but included just in case:
+    // Ensure output_value_a <= total_output_value_a
+    constrain (defi_interaction_note.total_output_value_a - output_value_a) >= 0;
+    // Ensure output_value_b <= total_output_value_b
+    constrain (defi_interaction_note.total_output_value_b - output_value_b) >= 0;
+
+    // Ratio checks.
+    // Note, these ratio_checks also guarantee:
+    //   defi_interaction_note.total_input_value != 0
+    //   defi_interaction_note.total_output_value_a != 0 (unless output_value_a == 0)
+    //   defi_interaction_note.total_output_value_b != 0 (unless output_value_b == 0)
+
+    // Check that (deposit * total_output_value_a) == (output_value_a * total_input_value)
+    // Rearranging, this ensures output_value_a == (deposit / total_input_value) * total_output_value_a
+    let rc1 = ((claim_note.deposit_value / defi_interaction_note.total_input_value) as Field) == (output_value_a / defi_interaction_note.total_output_value_a);
+    constrain ((output_value_a == 0) & (defi_interaction_note.total_output_value_a == 0)) | rc1;
+
+    // Check that (deposit * total_output_value_b) == (output_value_b * total_input_value)
+    // Rearranging, this ensures output_value_b == (deposit / total_input_value) * total_output_value_b
+    let rc2 = ((claim_note.deposit_value / defi_interaction_note.total_input_value) as Field) == (output_value_b / defi_interaction_note.total_output_value_b);
+    constrain ((output_value_b == 0) & (defi_interaction_note.total_output_value_b == 0)) | rc2;   
 }
