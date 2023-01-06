@@ -1,5 +1,6 @@
 use dep::std;
 use dep::utils;
+use dep::notes;
 
 fn main(
   data_tree_root: Field,
@@ -25,22 +26,9 @@ fn main(
     // 1: create: create == 1 && migrate == 0
     // 2: update = create == 0 && migrate == 0
     // 3: migrate = create == 0 && migrate == 1
-
-    let output_note_1_commitment = std::hash::pedersen([
-        alias_hash, 
-        new_account_public_key[0],
-        new_account_public_key[1],
-        spending_public_key_1[0],
-        spending_public_key_1[1]
-    ])[0];
-
-    let output_note_2_commitment = std::hash::pedersen([
-        alias_hash,
-        new_account_public_key[0],
-        new_account_public_key[1],
-        spending_public_key_2[0],
-        spending_public_key_2[1]
-    ])[0];
+    
+    let output_note_1 = notes::account::AccountNote::new(alias_hash, new_account_public_key, spending_public_key_1);
+    let output_note_2 = notes::account::AccountNote::new(alias_hash, new_account_public_key, spending_public_key_2);
 
     // @dev unlimited zero-valued nullifiers are permitted by the rollup circuit (e.g. if create == 0).
     let mut nullifier_1 = 0;
@@ -79,7 +67,7 @@ fn main(
         ]
     )[0];
     constrain message != 0;
-    
+
     let message_byte_array = std::to_bytes(message, 31);
     let sig_res = std::schnorr::verify_signature(signer[0], signer[1], signature, message_byte_array);
     constrain sig_res == 1;
@@ -117,8 +105,8 @@ fn main(
 
     [
         proof_id, 
-        output_note_1_commitment, 
-        output_note_2_commitment,
+        output_note_1.commitment, 
+        output_note_2.commitment,
         nullifier_1,
         nullifier_2,
         public_value,

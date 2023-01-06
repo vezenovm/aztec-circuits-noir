@@ -16,11 +16,11 @@ fn main(
   num_input_notes: Field,
   input_note1_index: Field,
   input_note2_index: Field,
-  input_note1: notes::value::WitnessData, // TODO: all the notes contain lots of data and should be made into structs
+  input_note1: notes::value::WitnessData, 
   input_note2: notes::value::WitnessData,
   output_note1: notes::value::WitnessData,
   output_note2: notes::value::WitnessData,
-  partial_claim_note_data: notes::claim::PartialClaimNoteWitnessData, // TODO: needs to be moved into its own lib for construction of struct
+  partial_claim_note_data: notes::claim::PartialClaimNoteWitnessData, 
   signing_pub_key: [Field; 2],
   signature: [u8; 64],
   merkle_root: Field,
