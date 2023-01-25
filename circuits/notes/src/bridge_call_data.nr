@@ -61,7 +61,7 @@ impl BridgeCallData {
         //                 (self.output_asset_id_a as Field * (one << output_asset_id_a_shift)) +
         //                 (self.output_asset_id_b as Field * (one << output_asset_id_b_shift)) + self.config.to_suint() +
         //                 (self.aux_data as Field * (one << aux_data_shift));
-        let two: comptime Field = 1;
+        let two: comptime Field = 2;
         let result = (self.bridge_address_id as Field) + (self.input_asset_id_a as Field * std::pow_32(two, input_asset_id_a_shift)) +
                 (self.input_asset_id_b as Field * std::pow_32(two, input_asset_id_b_shift)) +
                 (self.output_asset_id_a as Field * std::pow_32(two, output_asset_id_a_shift)) +
