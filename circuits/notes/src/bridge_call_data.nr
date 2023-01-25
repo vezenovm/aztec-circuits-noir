@@ -51,20 +51,22 @@ impl BridgeCallData {
     } 
 
     // TODO: this is to_safe_uint in C++ code, our max integer is half our field though
-    // so we should check if this is accurate to write
+    // so we should check how to make this accurate to write
     fn to_field(self: Self) -> Field {
-        // let one: comptime Field = 1;
-        constrain self.input_asset_id_a != 0;
-        // let result = one as u126 << input_asset_id_a_shift;
-        let result = 1; 
         // TODO: incorporate this into Noir, requires bit shifts to be allowed on Field Elements
-        // Could perhaps perform the same code using bit powers of 2 instead
-
+        // Performing the same code using bit powers of 2 instead but bit shifts should be more efficient
+        // let one: comptime Field = 1;
         // let result = (self.bridge_address_id as Field) + (self.input_asset_id_a as Field * (one << input_asset_id_a_shift)) +
         //                 (self.input_asset_id_b as Field * (one << input_asset_id_b_shift)) +
         //                 (self.output_asset_id_a as Field * (one << output_asset_id_a_shift)) +
         //                 (self.output_asset_id_b as Field * (one << output_asset_id_b_shift)) + self.config.to_suint() +
         //                 (self.aux_data as Field * (one << aux_data_shift));
+        let two: comptime Field = 1;
+        let result = (self.bridge_address_id as Field) + (self.input_asset_id_a as Field * std::pow_32(two, input_asset_id_a_shift)) +
+                (self.input_asset_id_b as Field * std::pow_32(two, input_asset_id_b_shift)) +
+                (self.output_asset_id_a as Field * std::pow_32(two, output_asset_id_a_shift)) +
+                (self.output_asset_id_b as Field * std::pow_32(two, output_asset_id_b_shift)) + self.config.to_suint() +
+                (self.aux_data as Field * std::pow_32(two, aux_data_shift));
         result
     }  
 }
@@ -76,7 +78,9 @@ struct bit_config {
 
 impl bit_config {
     fn to_suint(self: Self) -> Field {
-        let bitconfig_scaling_factor = 1 << bitconfig_shift;
+        // Cannot bit shift fields
+        // let bitconfig_scaling_factor = 1 << bitconfig_shift;
+        let bitconfig_scaling_factor = std::pow_32(2, bitconfig_shift);
 
         let mut result = self.second_input_in_use as Field;
         result = result + ((self.second_output_in_use as Field) * 2);
