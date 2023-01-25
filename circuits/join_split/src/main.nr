@@ -133,6 +133,8 @@ fn main(
   let total_in_value = public_input + input_note_1_value + input_note_2_value;
   let total_out_value = public_output + output_note_1_value + output_note_2_value + defi_deposit_value;
 
+  // TODO: need to disallows underflow and implicitly check that input_note_1_value >= input_note_2_value
+  // barretenberg code uses safe_uint for these which is constraining the bits while I am using a Field
   let tx_fee = total_in_value - total_out_value;
 
   // Verify input notes have the same account public key and account_required.
